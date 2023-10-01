@@ -1,10 +1,15 @@
 #!/usr/bin/env python
+import os
 import signal
 
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib
 from gi.repository import Gtk
+import yaml
+
+
+XDG_CONF_DIR = os.getenv('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
 
 
 class GTKPass(Gtk.Window):
@@ -13,8 +18,42 @@ class GTKPass(Gtk.Window):
 
         self.passs = PassStore()
         self.passs.gather_pass_tree()
+        self.make_ui()
     def make_ui(self):
         self.show_all()
+
+
+class Leaf:
+    """A simple class to hold Leaf data"""
+    def __init__(self, name, path):
+        self.name = name
+        self.path = path
+
+    def __repr__(self):
+        return f"Leaf: {self.name}"
+
+
+class Tree:
+    """A class to hold and manipulate leafs/other branches"""
+    def __init__(self, name=None, path=None):
+        self.name = name
+        self.children = []
+        self.path = path
+
+    def __repr__(self):
+        return f"Tree: {self.name}"
+
+    @property
+    def sorted_children(self):
+        files = {}
+        dirs = {}
+        for i in self.children:
+            if isinstance(i, Leaf):
+                files[i.name] = i
+            else:
+                dirs[i.name] = i
+        return ([dirs[x] for x in sorted(dirs)] +
+                [files[x] for x in sorted(files)])
 
 
 class PassStore:
@@ -23,6 +62,7 @@ class PassStore:
         self.store_path = self._get_store_path()
         self.data = Tree()
         self.conf = {}
+        self._read_config()
 
     def _get_store_path(self):
         path = os.environ.get('$PASSWORD_STORE_DIR')
@@ -56,6 +96,16 @@ class PassStore:
             model.children.append(t)
             self._gather_pass_tree(t, root, dname)
 
+    def _read_config(self):
+        conf = os.path.join(XDG_CONF_DIR, 'gtkpass.yaml')
+
+        try:
+            with open(conf) as fobj:
+                self.conf = yaml.safe_load(fobj)
+        except OSError as e:
+            print('Warning: There was an error on loading configuration '
+                  'file:', e)
+            pass
 
 
 def _check_pass_store(path):
