@@ -18,8 +18,34 @@ class GTKPass(Gtk.Window):
 
         self.passs = PassStore()
         self.passs.gather_pass_tree()
+        self._border = 5
         self.make_ui()
+
     def make_ui(self):
+        self.set_resizable(True)
+        self.set_border_width(self._border)
+
+        # main box
+        mainbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                          spacing=self._border)
+        mainbox.set_homogeneous(False)
+        self.add(mainbox)
+
+        # pane
+        pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        mainbox.pack_start(child=pane, expand=True, fill=True, padding=0)
+
+        # box for search entry
+        lbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                       spacing=self._border)
+        lbox.set_homogeneous(False)
+        pane.pack1(child=lbox, resize=True, shrink=False)
+
+        # search box
+        self.search = Gtk.SearchEntry()
+        self.search.set_placeholder_text("Search password")
+        lbox.pack_start(child=self.search, expand=False, fill=False, padding=0)
+
         self.show_all()
 
 
