@@ -21,6 +21,7 @@ class GTKPass(Gtk.Window):
         self.passs = PassStore()
         self.passs.gather_pass_tree()
         self._border = 5
+        self._expand = False
         self.make_ui()
 
     def make_ui(self):
@@ -29,6 +30,7 @@ class GTKPass(Gtk.Window):
 
         self.tree_store = Gtk.TreeStore(bool, str, Pango.Weight, str, str,
                                         bool)
+        self.add_nodes(self.passs.data, None)
 
         # main box
         mainbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
@@ -74,6 +76,42 @@ class GTKPass(Gtk.Window):
         lbox.pack_start(child=tv_sw, expand=True, fill=True, padding=0)
 
         self.show_all()
+        self.refresh()
+    def add_nodes(self, data, parent):
+        "Create the tree nodes from a hierarchical data structure"
+        for obj in data.sorted_children:
+            if isinstance(obj, Tree):
+                child = self.tree_store.append(parent,
+                                               [True, obj.name,
+                                                Pango.Weight.NORMAL,
+                                                "folder",
+                                                obj.path,
+                                                False])
+                self.add_nodes(obj, child)
+            else:
+                self.tree_store.append(parent, [True, obj.name,
+                                                Pango.Weight.NORMAL,
+                                                "application-x-generic",
+                                                obj.path,
+                                                True])
+
+    def refresh(self, _widget=None):
+        query = self.search.get_text().lower()
+        if query == "":
+            self.tree_store.foreach(self.reset_row, True)
+            if self._expand:
+                self.treeview.expand_all()
+            else:
+                self.treeview.collapse_all()
+        else:
+            self.tree_store.foreach(self.reset_row, False)
+            self.tree_store.foreach(self.show_matches, query, True)
+            self.treeview.expand_all()
+        self.ts_filter.refilter()
+
+    def reset_row(self, model, path, iter, make_visible):
+        self.tree_store.set_value(iter, 2, Pango.Weight.NORMAL)
+        self.tree_store.set_value(iter, 0, make_visible)
 
 
 class Leaf:
