@@ -132,7 +132,16 @@ class GTKPass(Gtk.Window):
         pane.pack2(child=self.grid, resize=True, shrink=False)
 
         self.show_all()
+        self._set_visible(self.grid, False)
         self.refresh()
+
+    def _set_visible(self, obj, set_visible=True):
+        for child in obj.get_children():
+            if hasattr(child, 'get_children'):
+                self._set_visible(child, set_visible)
+            else:
+                child.show() if set_visible else child.hide()
+        self.textview.show() if set_visible else self.textview.hide()
 
     def create_toolbar(self):
         toolbar = Gtk.Toolbar()
@@ -228,13 +237,21 @@ class GTKPass(Gtk.Window):
     def on_selected(self, selection):
         model, treeiter = selection.get_selected()
 
+        self.label.set_label('')
+        self.password.set_text('')
+        self.user.set_text('')
+        self.url.set_text('')
+        self.textview.get_buffer().set_text('')
+
         if not (treeiter and model[treeiter] and model[treeiter][5]):
+            self._set_visible(self.grid, False)
             return
 
         success, data = self.passs.get_pass(model[treeiter][4])
         if not success:
             self.label.set_label(f'<span foreground="red" size="x-large">'
                                  f'There is an error:\n{data}</span>')
+            self.label.set_visible(True)
             return
 
         self.label.set_label(f'<span size="x-large">{model[treeiter][4]}'
@@ -256,6 +273,8 @@ class GTKPass(Gtk.Window):
                 self.textview.get_buffer().set_text("\n".join(output[count:])
                                                     [6:].strip())
                 break
+        self._set_visible(self.grid, True)
+
 
 
 class Leaf:
