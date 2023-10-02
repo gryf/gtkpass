@@ -41,6 +41,12 @@ class GTKPass(Gtk.Window):
                                         bool)
         self.add_nodes(self.passs.data, None)
 
+        # clipboard
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+
+        # attach keyboard events
+        self.connect("key-press-event", self.on_key_press_event)
+
         # main box
         mainbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                           spacing=self._border)
@@ -293,6 +299,16 @@ class GTKPass(Gtk.Window):
         # collapse row under cursor on left cursor key
         if event.keyval == Gdk.KEY_Left and treeview.get_cursor()[0]:
             treeview.collapse_row(treeview.get_cursor()[0])
+
+    def on_key_press_event(self, widget, event):
+        ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
+        if ctrl and event.keyval == Gdk.KEY_b:
+            if self.user.get_text != '':
+                self.clipboard.set_text(self.user.get_text(), -1)
+        elif ctrl and event.keyval == Gdk.KEY_c:
+            if self.password.get_text != '':
+                self.clipboard.set_text(self.password.get_text(), -1)
+        # TODO: clear clipboard after a minute or so.
 
 
 class Leaf:
