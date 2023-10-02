@@ -85,6 +85,50 @@ class GTKPass(Gtk.Window):
         tv_sw.add(self.treeview)
         lbox.pack_start(child=tv_sw, expand=True, fill=True, padding=0)
 
+        # display things
+        rbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                       spacing=self._border)
+        rbox.set_homogeneous(False)
+
+        # entry preview
+        self.grid = Gtk.Grid()
+        self.grid.set_column_homogeneous(False)
+        self.grid.set_row_homogeneous(False)
+        self.grid.set_row_spacing(10)
+        self.grid.set_column_spacing(10)
+
+        self.label = Gtk.Label()
+        self.label.set_use_markup(True)
+        self.label.set_halign(Gtk.Align.START)
+
+        self.grid.attach(self.label, 0, 0, 2, 1)
+        for row, label in enumerate(['Username:', 'Password:',
+                                     'URL:', 'Notes:'], start=1):
+            label = Gtk.Label(label=label)
+            label.set_halign(Gtk.Align.END)
+            self.grid.attach(label, 0, row, 1, 1)
+
+        sw = Gtk.ScrolledWindow()
+        self.textview = Gtk.TextView()
+        self.textview.set_editable(False)
+        self.textview.set_hexpand(True)
+        self.textview.set_vexpand(True)
+        sw.add(self.textview)
+        self.grid.attach(sw, 1, 4, 1, 1)
+        self.user = Gtk.Entry()
+        self.url = Gtk.Entry()
+        self.password = Gtk.Entry()
+        self.password.set_visibility(False)
+        self.password.set_icon_from_icon_name(1, 'view-reveal-symbolic')
+        self.password.set_icon_activatable(1, True)
+        for widget in (self.user, self.password, self.url):
+            widget.set_editable(False)
+
+        self.grid.attach(self.user, 1, 1, 1, 1)
+        self.grid.attach(self.password, 1, 2, 1, 1)
+        self.grid.attach(self.url, 1, 3, 1, 1)
+        pane.pack2(child=self.grid, resize=True, shrink=False)
+
         self.show_all()
         self.refresh()
 
