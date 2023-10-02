@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import signal
+import subprocess
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -79,6 +80,7 @@ class GTKPass(Gtk.Window):
         column.add_attribute(icon_renderer, "icon_name", 3)
         self.treeview.append_column(column)
         selection = self.treeview.get_selection()
+        selection.connect('changed', self.on_selected)
 
         # scrollview to hold treeview
         tv_sw = Gtk.ScrolledWindow()
@@ -223,6 +225,18 @@ class GTKPass(Gtk.Window):
                 self.make_subtree_visible(model, iter)
             return
 
+    def on_selected(self, selection):
+        model, treeiter = selection.get_selected()
+
+        if not (treeiter and model[treeiter] and model[treeiter][5]):
+            return
+
+        success, data = self.passs.get_pass(model[treeiter][4])
+        if not success:
+            self.label.set_label(f'<span foreground="red" size="x-large">'
+                                 f'There is an error:\n{data}</span>')
+            return
+
 
 class Leaf:
     """A simple class to hold Leaf data"""
@@ -277,6 +291,14 @@ class PassStore:
 
     def gather_pass_tree(self):
         self._gather_pass_tree(self.data, self.store_path, '')
+
+    def get_pass(self, path):
+        proc = subprocess.run(['pass', path], capture_output=True,
+                              encoding='utf-8')
+        if proc.returncode == 0:
+            return True, proc.stdout
+        else:
+            return False, proc.stderr
 
     def _gather_pass_tree(self, model, root, dirname):
         fullpath = os.path.join(root, dirname)
