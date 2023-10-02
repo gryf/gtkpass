@@ -20,11 +20,16 @@ class GTKPass(Gtk.Window):
 
         self.passs = PassStore()
         self.passs.gather_pass_tree()
+        self.conf = self.passs.conf
         self._border = 5
         self._expand = False
         self.make_ui()
 
     def make_ui(self):
+        if (self.conf.get('ui', {}).get('width') and
+                self.conf.get('ui', {}).get('height')):
+            self.set_size_request(self.conf['ui']['width'],
+                                  self.conf['ui']['height'])
         self.set_resizable(True)
         self.set_border_width(self._border)
 
