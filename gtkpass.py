@@ -38,6 +38,10 @@ class GTKPass(Gtk.Window):
         mainbox.set_homogeneous(False)
         self.add(mainbox)
 
+        # add toolbar
+        toolbar = self.create_toolbar()
+        mainbox.pack_start(child=toolbar, expand=False, fill=False, padding=0)
+
         # pane
         pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         mainbox.pack_start(child=pane, expand=True, fill=True, padding=0)
@@ -78,6 +82,36 @@ class GTKPass(Gtk.Window):
 
         self.show_all()
         self.refresh()
+
+    def create_toolbar(self):
+        toolbar = Gtk.Toolbar()
+
+        b_new = Gtk.ToolButton()
+        b_new.set_icon_name("document-new-symbolic")
+        toolbar.insert(b_new, 0)
+
+        b_dir = Gtk.ToolButton()
+        b_dir.set_icon_name("folder-new-symbolic")
+        toolbar.insert(b_dir, 1)
+
+        b_edit = Gtk.ToolButton()
+        b_edit.set_icon_name("document-edit-symbolic")
+        toolbar.insert(b_edit, 2)
+
+        b_del = Gtk.ToolButton()
+        b_del.set_icon_name("edit-delete-symbolic")
+        toolbar.insert(b_del, 3)
+
+        b_gitpush = Gtk.ToolButton()
+        b_gitpush.set_icon_name("go-up-symbolic")
+        toolbar.insert(b_gitpush, 4)
+
+        b_gitpull = Gtk.ToolButton()
+        b_gitpull.set_icon_name("go-down-symbolic")
+        toolbar.insert(b_gitpull, 5)
+
+        return toolbar
+
     def add_nodes(self, data, parent):
         "Create the tree nodes from a hierarchical data structure"
         for obj in data.sorted_children:
