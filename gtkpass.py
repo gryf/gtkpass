@@ -237,6 +237,26 @@ class GTKPass(Gtk.Window):
                                  f'There is an error:\n{data}</span>')
             return
 
+        self.label.set_label(f'<span size="x-large">{model[treeiter][4]}'
+                             f'</span>')
+        output = data.split('\n')
+
+        for count, line in enumerate(output):
+            if count == 0:
+                self.password.set_text(line.strip())
+                continue
+            if (output[count].lower().startswith('user:') or
+                    output[count].lower().startswith('username:')):
+                self.user.set_text(line.split(':')[1].strip())
+                continue
+            if output[count].lower().startswith('url:'):
+                self.url.set_text(':'.join(line.split(':')[1:]).strip())
+                continue
+            if output[count].lower().startswith('notes:'):
+                self.textview.get_buffer().set_text("\n".join(output[count:])
+                                                    [6:].strip())
+                break
+
 
 class Leaf:
     """A simple class to hold Leaf data"""
