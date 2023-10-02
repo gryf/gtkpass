@@ -4,8 +4,10 @@ import signal
 
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('Pango', '1.0')
 from gi.repository import GLib
 from gi.repository import Gtk
+from gi.repository import Pango
 import yaml
 
 
@@ -25,6 +27,9 @@ class GTKPass(Gtk.Window):
         self.set_resizable(True)
         self.set_border_width(self._border)
 
+        self.tree_store = Gtk.TreeStore(bool, str, Pango.Weight, str, str,
+                                        bool)
+
         # main box
         mainbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                           spacing=self._border)
@@ -35,7 +40,7 @@ class GTKPass(Gtk.Window):
         pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         mainbox.pack_start(child=pane, expand=True, fill=True, padding=0)
 
-        # box for search entry
+        # box for search entry and treeview
         lbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                        spacing=self._border)
         lbox.set_homogeneous(False)
@@ -45,6 +50,28 @@ class GTKPass(Gtk.Window):
         self.search = Gtk.SearchEntry()
         self.search.set_placeholder_text("Search password")
         lbox.pack_start(child=self.search, expand=False, fill=False, padding=0)
+
+        # treeview with filtering
+        self.ts_filter = self.tree_store.filter_new()
+        self.ts_filter.set_visible_column(0)
+        self.treeview = Gtk.TreeView(model=self.ts_filter)
+        self.treeview.set_headers_visible(False)
+
+        icon_renderer = Gtk.CellRendererPixbuf()
+        text_renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn()
+        column.pack_start(icon_renderer, False)
+        column.pack_start(text_renderer, False)
+        column.add_attribute(text_renderer, "text", 1)
+        column.add_attribute(text_renderer, "weight", 2)
+        column.add_attribute(icon_renderer, "icon_name", 3)
+        self.treeview.append_column(column)
+        selection = self.treeview.get_selection()
+
+        # scrollview to hold treeview
+        tv_sw = Gtk.ScrolledWindow()
+        tv_sw.add(self.treeview)
+        lbox.pack_start(child=tv_sw, expand=True, fill=True, padding=0)
 
         self.show_all()
 
