@@ -127,6 +127,8 @@ class GTKPass(Gtk.Window):
         self.password.set_visibility(False)
         self.password.set_icon_from_icon_name(1, 'view-reveal-symbolic')
         self.password.set_icon_activatable(1, True)
+        self.password.connect('icon-press', lambda obj, icon, ev:
+                              obj.set_visibility(not obj.get_visibility()))
         for widget in (self.user, self.password, self.url):
             widget.set_editable(False)
 
@@ -135,6 +137,10 @@ class GTKPass(Gtk.Window):
         self.grid.attach(self.url, 1, 3, 1, 1)
         pane.pack2(child=self.grid, resize=True, shrink=False)
 
+        # set split in ratio 40/60
+        pane.set_position(int(4 * self.get_size()[0]/10))
+
+        self.search.grab_focus()
         self.show_all()
         self._set_visible(self.grid, False)
         self.refresh()
