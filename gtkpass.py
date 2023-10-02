@@ -51,6 +51,7 @@ class GTKPass(Gtk.Window):
         # search box
         self.search = Gtk.SearchEntry()
         self.search.set_placeholder_text("Search password")
+        self.search.connect("changed", self.refresh)
         lbox.pack_start(child=self.search, expand=False, fill=False, padding=0)
 
         # treeview with filtering
@@ -112,6 +113,32 @@ class GTKPass(Gtk.Window):
     def reset_row(self, model, path, iter, make_visible):
         self.tree_store.set_value(iter, 2, Pango.Weight.NORMAL)
         self.tree_store.set_value(iter, 0, make_visible)
+
+    def make_path_visible(self, model, iter):
+        while iter:
+            self.tree_store.set_value(iter, 0, True)
+            iter = model.iter_parent(iter)
+
+    def make_subtree_visible(self, model, iter):
+        for i in range(model.iter_n_children(iter)):
+            subtree = model.iter_nth_child(iter, i)
+            if model.get_value(subtree, 0):
+                continue
+            self.tree_store.set_value(subtree, 0, True)
+            self.make_subtree_visible(model, subtree)
+
+    def show_matches(self, model, path, iter, query,
+                     show_subtrees_of_matches):
+        text = model.get_value(iter, 1).lower()
+        if query in text:
+            # Highlight direct match with bold
+            self.tree_store.set_value(iter, 2, Pango.Weight.BOLD)
+            # Propagate visibility change up
+            self.make_path_visible(model, iter)
+            if show_subtrees_of_matches:
+                # Propagate visibility change down
+                self.make_subtree_visible(model, iter)
+            return
 
 
 class Leaf:
