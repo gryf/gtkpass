@@ -4,9 +4,11 @@ import signal
 import subprocess
 
 import gi
+gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
 from gi.repository import GLib
+from gi.repository import Gdk
 from gi.repository import Gtk
 from gi.repository import Pango
 import yaml
@@ -16,6 +18,7 @@ XDG_CONF_DIR = os.getenv('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
 
 
 class GTKPass(Gtk.Window):
+
     def __init__(self):
         Gtk.Window.__init__(self, title="GTKPass")
 
@@ -69,6 +72,7 @@ class GTKPass(Gtk.Window):
         self.ts_filter.set_visible_column(0)
         self.treeview = Gtk.TreeView(model=self.ts_filter)
         self.treeview.set_headers_visible(False)
+        self.treeview.connect("key-release-event", self.on_treeview_keypress)
 
         icon_renderer = Gtk.CellRendererPixbuf()
         text_renderer = Gtk.CellRendererText()
@@ -275,6 +279,14 @@ class GTKPass(Gtk.Window):
                 break
         self._set_visible(self.grid, True)
 
+    def on_treeview_keypress(self, treeview, event):
+        # expand current branch on right cursor key or enter/return
+        if (event.keyval in (Gdk.KEY_Right, Gdk.KEY_Return) and
+                treeview.get_cursor()[0]):
+            treeview.expand_row(treeview.get_cursor()[0], False)
+        # collapse row under cursor on left cursor key
+        if event.keyval == Gdk.KEY_Left and treeview.get_cursor()[0]:
+            treeview.collapse_row(treeview.get_cursor()[0])
 
 
 class Leaf:
