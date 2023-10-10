@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import signal
+import shutil
 import subprocess
 
 import gi
@@ -426,6 +427,10 @@ class Tree:
 
 class PassStore:
     """Password store GUI app"""
+    NON_EMPTY = 1
+    SUCCESS = 0
+    ERROR = 2
+
     def __init__(self):
         self.store_path = self._get_store_path()
         self.data = Tree()
@@ -460,6 +465,30 @@ class PassStore:
             return True, ''
         except IOError as exc:
             return False, str(exc)
+
+    def delete(self, item, recursively=False):
+        path = os.path.join(self.store_path, item)
+
+        if os.path.exists(path) and os.path.isdir(path) and recursively:
+            try:
+                shutil.rmtree(path)
+            except IOError as exc:
+                return self.ERROR, str(exc)
+        elif os.path.exists(path) and os.path.isdir(path):
+            _, files, dirs = next(os.walk(path))
+            if files or dirs:
+                return self.NON_EMPTY, ""
+            try:
+                shutil.rmtree(path)
+            except IOError as exc:
+                return self.ERROR, str(exc)
+        elif not os.path.exists and os.path.isfile(path + '.gpg'):
+            try:
+                os.unlink(path + '.gpg')
+            except IOError as exc:
+                return self.ERROR, str(exc)
+
+        return self.SUCCESS, ''
 
     def _gather_pass_tree(self, model, root, dirname):
         fullpath = os.path.join(root, dirname)
