@@ -163,12 +163,6 @@ class GTKPass(Gtk.Window):
                 child.show() if set_visible else child.hide()
         self.textview.show() if set_visible else self.textview.hide()
 
-    def recreate_tree_store(self):
-        self.passs.gather_pass_tree()
-        self.tree_store.clear()
-        self.add_nodes(self.passs.data, None)
-        self.refresh()
-
     def create_toolbar(self):
         toolbar = Gtk.Toolbar()
 
@@ -329,10 +323,8 @@ class GTKPass(Gtk.Window):
 
     def on_new_dir(self, button):
         if self._selected is None:
-            print('none selected')
             path = ''
         else:
-            print(f'{self._selected} selected')
             path = self._selected
 
         dialog = NewDirDialog(self, path)
@@ -340,7 +332,7 @@ class GTKPass(Gtk.Window):
         dirname = dialog.get_dirname()
         dialog.destroy()
 
-        if response != Gtk.ResponseType.OK:
+        if response != Gtk.ResponseType.OK or not dirname:
             return
 
         result, msg = self.passs.new_dir(os.path.join(path, dirname))
@@ -350,11 +342,22 @@ class GTKPass(Gtk.Window):
                                        message_type=Gtk.MessageType.INFO,
                                        buttons=Gtk.ButtonsType.CLOSE,
                                        text='There was an error')
+
             dialog.format_secondary_text(msg)
             dialog.run()
             dialog.destroy()
 
-        self.recreate_tree_store()
+        selection = self.treeview.get_selection()
+        if not selection:
+            return
+        tree_model_filter, tree_paths = selection.get_selected_rows()
+        tree_store = tree_model_filter.get_model()
+        tree_iter = tree_store.get_iter(tree_paths[0])
+
+        self.tree_store.append(tree_iter, [True, dirname,
+                                           Pango.Weight.NORMAL, "folder",
+                                           os.path.join(path, dirname), False])
+
 
     def on_delete(self, button):
         if not self._selected:
@@ -385,7 +388,16 @@ class GTKPass(Gtk.Window):
             dialog.format_secondary_text(msg)
             dialog.run()
             dialog.destroy()
-        self.recreate_tree_store()
+        self._selected = None
+
+        # remove selected branch/leaf from store
+        selection = self.treeview.get_selection()
+        tree_model_filter, tree_paths = selection.get_selected_rows()
+        tree_store = tree_model_filter.get_model()
+
+        for path in tree_paths:
+            tree_iter = tree_store.get_iter(path)
+            tree_store.remove(tree_iter)
 
     def on_key_press_event(self, widget, event):
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
