@@ -27,6 +27,7 @@ class GTKPass(Gtk.Window):
         self.conf = self.passs.conf
         self._border = 5
         self._expand = False
+        self._selected = None
         self.make_ui()
 
     def make_ui(self):
@@ -77,8 +78,10 @@ class GTKPass(Gtk.Window):
         self.ts_filter = self.tree_store.filter_new()
         self.ts_filter.set_visible_column(0)
         self.treeview = Gtk.TreeView(model=self.ts_filter)
+        self.treeview.set_activate_on_single_click(True)
         self.treeview.set_headers_visible(False)
         self.treeview.connect("key-release-event", self.on_treeview_keypress)
+        self.treeview.connect('row-activated', self.on_row_activated)
 
         icon_renderer = Gtk.CellRendererPixbuf()
         text_renderer = Gtk.CellRendererText()
@@ -159,6 +162,11 @@ class GTKPass(Gtk.Window):
                 child.show() if set_visible else child.hide()
         self.textview.show() if set_visible else self.textview.hide()
 
+    def recreate_tree_store(self):
+        self.passs.gather_pass_tree()
+        self.tree_store.clear()
+        self.add_nodes(self.passs.data, None)
+
     def create_toolbar(self):
         toolbar = Gtk.Toolbar()
 
@@ -168,6 +176,7 @@ class GTKPass(Gtk.Window):
 
         b_dir = Gtk.ToolButton()
         b_dir.set_icon_name("folder-new-symbolic")
+        b_dir.connect("clicked", self.on_new_dir)
         toolbar.insert(b_dir, 1)
 
         b_edit = Gtk.ToolButton()
@@ -250,6 +259,21 @@ class GTKPass(Gtk.Window):
                 self.make_subtree_visible(model, iter)
             return
 
+    def on_row_activated(self, treeview, treepath, treeview_col):
+        selection = treeview.get_selection()
+
+        if not selection:
+            return
+
+        model, treeiter = selection.get_selected()
+
+        if (self._selected is not None and
+                self._selected == model[treeiter][4]):
+            self._selected = None
+            selection.unselect_all()
+        else:
+            self._selected = model[treeiter][4]
+
     def on_selected(self, selection):
         model, treeiter = selection.get_selected()
 
@@ -300,6 +324,36 @@ class GTKPass(Gtk.Window):
         if event.keyval == Gdk.KEY_Left and treeview.get_cursor()[0]:
             treeview.collapse_row(treeview.get_cursor()[0])
 
+    def on_new_dir(self, button):
+        if self._selected is None:
+            print('none selected')
+            path = ''
+        else:
+            print(f'{self._selected} selected')
+            path = self._selected
+
+        dialog = NewDirDialog(self, path)
+        response = dialog.run()
+        dirname = dialog.get_dirname()
+        dialog.destroy()
+
+        if response != Gtk.ResponseType.OK:
+            return
+
+        result, msg = self.passs.new_dir(os.path.join(path, dirname))
+        if not result:
+            dialog = Gtk.MessageDialog(transient_for=self,
+                                       flags=0,
+                                       message_type=Gtk.MessageType.INFO,
+                                       buttons=Gtk.ButtonsType.CLOSE,
+                                       text='There was an error')
+            dialog.format_secondary_text(msg)
+            dialog.run()
+            dialog.destroy()
+
+        self.recreate_tree_store()
+        self.refresh()
+
     def on_key_press_event(self, widget, event):
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
         if ctrl and event.keyval == Gdk.KEY_b:
@@ -309,6 +363,32 @@ class GTKPass(Gtk.Window):
             if self.password.get_text != '':
                 self.clipboard.set_text(self.password.get_text(), -1)
         # TODO: clear clipboard after a minute or so.
+
+
+class NewDirDialog(Gtk.Dialog):
+    def __init__(self, parent, path):
+        super().__init__(title="Enter new directory", transient_for=parent,
+                         flags=0)
+        self.set_modal(True)
+        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                         Gtk.STOCK_OK, Gtk.ResponseType.OK)
+
+        label = Gtk.Label(label=f"Create new directory under "
+                          f"{'/' if not path else path} path")
+
+        box = self.get_content_area()
+        box.add(label)
+        self.entry = Gtk.Entry()
+        self.entry.connect("key-release-event", self.on_release_key)
+        box.add(self.entry)
+        self.show_all()
+
+    def on_release_key(self, entry, event):
+        if event.keyval == Gdk.KEY_Return:
+            self.response(Gtk.ResponseType.OK)
+
+    def get_dirname(self):
+        return self.entry.get_text()
 
 
 class Leaf:
@@ -372,6 +452,14 @@ class PassStore:
             return True, proc.stdout
         else:
             return False, proc.stderr
+
+    def new_dir(self, dirname):
+        path = os.path.join(self.store_path, dirname)
+        try:
+            os.mkdir(os.path.join('/root', path), mode=500)
+            return True, ''
+        except IOError as exc:
+            return False, str(exc)
 
     def _gather_pass_tree(self, model, root, dirname):
         fullpath = os.path.join(root, dirname)
