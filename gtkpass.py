@@ -167,6 +167,7 @@ class GTKPass(Gtk.Window):
         self.passs.gather_pass_tree()
         self.tree_store.clear()
         self.add_nodes(self.passs.data, None)
+        self.refresh()
 
     def create_toolbar(self):
         toolbar = Gtk.Toolbar()
@@ -186,6 +187,7 @@ class GTKPass(Gtk.Window):
 
         b_del = Gtk.ToolButton()
         b_del.set_icon_name("edit-delete-symbolic")
+        b_del.connect("clicked", self.on_delete)
         toolbar.insert(b_del, 3)
 
         b_gitpush = Gtk.ToolButton()
@@ -353,7 +355,37 @@ class GTKPass(Gtk.Window):
             dialog.destroy()
 
         self.recreate_tree_store()
-        self.refresh()
+
+    def on_delete(self, button):
+        if not self._selected:
+            return
+
+        # TODO: add configurable confirmation?
+        result, msg = self.passs.delete(self._selected)
+        if result == self.passs.NON_EMPTY:
+            dialog = Gtk.MessageDialog(transient_for=self,
+                                       flags=0,
+                                       message_type=Gtk.MessageType.QUESTION,
+                                       buttons=Gtk.ButtonsType.OK_CANCEL,
+                                       text='Directory not empty')
+            dialog.format_secondary_text(f'Do you want to delete '
+                                         f'{self._selected} recursively?')
+            response = dialog.run()
+            dialog.destroy()
+
+            if response == Gtk.ResponseType.OK:
+                result, msg = self.passs.delete(self._selected, True)
+
+        if result == self.passs.ERROR:
+            dialog = Gtk.MessageDialog(transient_for=self,
+                                       flags=0,
+                                       message_type=Gtk.MessageType.INFO,
+                                       buttons=Gtk.ButtonsType.CLOSE,
+                                       text='There was an error')
+            dialog.format_secondary_text(msg)
+            dialog.run()
+            dialog.destroy()
+        self.recreate_tree_store()
 
     def on_key_press_event(self, widget, event):
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
