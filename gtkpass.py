@@ -448,6 +448,7 @@ class PassStore:
         return path
 
     def gather_pass_tree(self):
+        self.data = Tree()
         self._gather_pass_tree(self.data, self.store_path, '')
 
     def get_pass(self, path):
