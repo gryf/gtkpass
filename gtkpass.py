@@ -563,6 +563,17 @@ class PassStore:
                   'file:', e)
             pass
 
+    def write_config(self):
+        conf = os.path.join(XDG_CONF_DIR, 'gtkpass.yaml')
+
+        try:
+            with open(conf, 'w') as fobj:
+                yaml.safe_dump(self.conf, fobj)
+        except OSError as e:
+            print('Warning: There was an error on loading configuration '
+                  'file:', e)
+            pass
+
 
 def _check_pass_store(path):
     if not os.path.exists(path) or not os.path.isdir(path):
@@ -570,11 +581,20 @@ def _check_pass_store(path):
                       "is not a directory", path)
 
 
+def quit(app, event):
+    if app.conf.get('save_dimension'):
+        dim = app.get_size()
+        app.conf['width'] = dim.width
+        app.conf['height'] = dim.height
+        app.passs.write_config()
+    Gtk.main_quit(app, event)
+
+
 def main():
     app = GTKPass()
-    app.connect("delete-event", Gtk.main_quit)
+    app.connect("delete-event", quit)
 
-    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, Gtk.main_quit)
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, quit)
     Gtk.main()
 
 
