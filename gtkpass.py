@@ -349,12 +349,13 @@ class GTKPass(Gtk.Window):
             return
         tree_model_filter, tree_paths = selection.get_selected_rows()
         tree_store = tree_model_filter.get_model()
-        tree_iter = tree_store.get_iter(tree_paths[0])
+        tree_iter = None
+        if tree_paths:
+            tree_iter = tree_store.get_iter(tree_paths[0])
 
         self.tree_store.append(tree_iter, [True, dirname,
                                            Pango.Weight.NORMAL, "folder",
                                            os.path.join(path, dirname), False])
-
 
     def on_delete(self, button):
         if not self._selected:
