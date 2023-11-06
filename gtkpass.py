@@ -8,11 +8,11 @@ import gi
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
-from gi.repository import GLib
-from gi.repository import Gdk
-from gi.repository import Gtk
-from gi.repository import Pango
-import yaml
+from gi.repository import GLib  # noqa: E402
+from gi.repository import Gdk  # noqa: E402
+from gi.repository import Gtk  # noqa: E402
+from gi.repository import Pango  # noqa: E402
+import yaml  # noqa: E402
 
 
 XDG_CONF_DIR = os.getenv('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
