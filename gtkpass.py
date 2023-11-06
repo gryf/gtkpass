@@ -361,21 +361,44 @@ class GTKPass(Gtk.Window):
         if not self._selected:
             return
 
-        # TODO: add configurable confirmation?
-        result, msg = self.passs.delete(self._selected)
-        if result == self.passs.NON_EMPTY:
+        no_rec_confirm = self.conf.get('confirm_recursive_delete') is False
+        no_confirm = self.conf.get('confirm_delete') is False
+
+        if no_confirm:
+            result, msg = self.passs.delete(self._selected)
+        else:
             dialog = Gtk.MessageDialog(transient_for=self,
                                        flags=0,
                                        message_type=Gtk.MessageType.QUESTION,
                                        buttons=Gtk.ButtonsType.OK_CANCEL,
-                                       text='Directory not empty')
-            dialog.format_secondary_text(f'Do you want to delete '
-                                         f'{self._selected} recursively?')
+                                       text='Removing item from passstore')
+            dialog.format_secondary_text(f'Are you sure you want to delete '
+                                         f'{self._selected}?')
             response = dialog.run()
             dialog.destroy()
 
             if response == Gtk.ResponseType.OK:
+                result, msg = self.passs.delete(self._selected)
+            else:
+                return
+
+        if result == self.passs.NON_EMPTY:
+            if no_rec_confirm:
                 result, msg = self.passs.delete(self._selected, True)
+            else:
+                dialog = Gtk.MessageDialog(transient_for=self,
+                                           flags=0,
+                                           message_type=Gtk.MessageType
+                                           .QUESTION,
+                                           buttons=Gtk.ButtonsType.OK_CANCEL,
+                                           text='Directory not empty')
+                dialog.format_secondary_text(f'Do you want to delete '
+                                             f'{self._selected} recursively?')
+                response = dialog.run()
+                dialog.destroy()
+
+                if response == Gtk.ResponseType.OK:
+                    result, msg = self.passs.delete(self._selected, True)
 
         if result == self.passs.ERROR:
             dialog = Gtk.MessageDialog(transient_for=self,
