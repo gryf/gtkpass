@@ -33,8 +33,7 @@ class GTKPass(Gtk.Window):
 
     def make_ui(self):
         if (self.conf.get('width') and self.conf.get('height')):
-            self.set_size_request(self.conf['width'], self.conf['height'])
-        self.set_resizable(True)
+            self.resize(self.conf['width'], self.conf['height'])
         self.set_border_width(self._border)
 
         self.tree_store = Gtk.TreeStore(bool, str, Pango.Weight, str, str,
